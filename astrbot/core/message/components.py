@@ -401,8 +401,9 @@ class Image(BaseMessageComponent):
     # 额外
     path: str | None = ""
     file_unique: str | None = ""  # 某些平台可能有图片缓存的唯一标识
+    is_emoji: bool | None = False  # 标记是否为表情包
 
-    def __init__(self, file: str | None, **_):
+    def __init__(self, file: str | None = None, **_):
         super().__init__(file=file, **_)
 
     @staticmethod
@@ -816,4 +817,5 @@ ComponentTypes = {
     "json": Json,
     "unknown": Unknown,
     "WechatEmoji": WechatEmoji,
+    "emoji": Image,  # 表情包作为图片处理
 }

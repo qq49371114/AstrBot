@@ -197,20 +197,43 @@ class AstrBotToMaiBot:
 
         # 图片
         elif comp_type == ComponentType.Image:
-            # 优先使用 URL，其次使用 file，最后使用 base64
+            # 优先使用 base64，其次使用 URL，最后使用 file
             url = getattr(component, "url", None)
             file = getattr(component, "file", None)
-            if url:
-                return Seg(type="image", data=json.dumps({"url": url}, ensure_ascii=False))
+            base64_data = getattr(component, "base64", None)
+            is_emoji = getattr(component, "is_emoji", False)
+
+            # 处理 base64:// 前缀格式
+            if file and isinstance(file, str) and file.startswith("base64://"):
+                base64_data = file[9:]
+                file = None
+
+            # 根据 is_emoji 标记决定类型
+            seg_type = "emoji" if is_emoji else "image"
+
+            # MaiBot 的 message.py 期望 segment.data 是纯 base64 字符串
+            # 所以这里直接传 base64 数据，不包装成 JSON
+            if base64_data:
+                return Seg(type=seg_type, data=base64_data)
+            elif url:
+                # URL 格式需要特殊处理，使用 imageurl 类型
+                return Seg(type="imageurl", data=url)
             elif file:
-                return Seg(type="image", data=json.dumps({"file": file}, ensure_ascii=False))
+                # 文件路径，尝试读取并转换为 base64
+                try:
+                    import base64 as b64
+                    with open(file, 'rb') as f:
+                        return Seg(type=seg_type, data=b64.b64encode(f.read()).decode('utf-8'))
+                except Exception:
+                    return Seg(type=seg_type, data="")
             else:
-                return Seg(type="image", data="")
+                return Seg(type=seg_type, data="")
 
         # @提及
         elif comp_type == ComponentType.At:
             qq = getattr(component, "qq", "")
-            return Seg(type="at", data=json.dumps({"qq": str(qq)}, ensure_ascii=False))
+            # message.py 期望 data 是纯字符串（QQ号或用户名）
+            return Seg(type="at", data=str(qq))
 
         # 回复
         elif comp_type == ComponentType.Reply:
@@ -225,25 +248,63 @@ class AstrBotToMaiBot:
 
         # 语音
         elif comp_type == ComponentType.Record:
-            url = getattr(component, "url", None)
+            # message.py 的 get_voice_text 期望纯 base64 字符串
             file = getattr(component, "file", None)
-            if url:
-                return Seg(type="voice", data=json.dumps({"url": url}, ensure_ascii=False))
+            url = getattr(component, "url", None)
+
+            # 处理 base64:// 前缀格式（aiocqhttp 适配器会转换为这种格式）
+            if file and isinstance(file, str) and file.startswith("base64://"):
+                return Seg(type="voice", data=file[9:])
+            elif url and isinstance(url, str) and url.startswith("base64://"):
+                return Seg(type="voice", data=url[9:])
             elif file:
-                return Seg(type="voice", data=json.dumps({"file": file}, ensure_ascii=False))
+                # 尝试读取文件并转换为 base64
+                try:
+                    import base64 as b64
+                    with open(file, 'rb') as f:
+                        return Seg(type="voice", data=b64.b64encode(f.read()).decode('utf-8'))
+                except Exception:
+                    return Seg(type="voice", data="")
             return None
 
         # 视频
         elif comp_type == ComponentType.Video:
             file = getattr(component, "file", None)
             if file:
-                return Seg(type="video", data=json.dumps({"file": file}, ensure_ascii=False))
+                # 处理 base64:// 前缀格式
+                if isinstance(file, str) and file.startswith("base64://"):
+                    return Seg(type="video", data=file[9:])
+                # 尝试读取文件并转换为 base64
+                try:
+                    import base64 as b64
+                    with open(file, 'rb') as f:
+                        return Seg(type="video", data=b64.b64encode(f.read()).decode('utf-8'))
+                except Exception:
+                    # 文件读取失败，使用 videourl 类型
+                    return Seg(type="videourl", data=file)
             return None
 
         # QQ 表情
         elif comp_type == ComponentType.Face:
             face_id = getattr(component, "id", 0)
-            return Seg(type="face", data=json.dumps({"id": face_id}, ensure_ascii=False))
+            # uni_message_sender.py 期望 data 是表情 ID
+            return Seg(type="face", data=str(face_id))
+
+        # 微信表情包 (自定义表情/贴图)
+        elif comp_type == ComponentType.WechatEmoji:
+            # 微信表情包可能包含 md5、cdnurl、base64 等字段
+            base64_data = getattr(component, "base64", None)
+            cdnurl = getattr(component, "cdnurl", "")
+
+            # 优先使用 base64 数据
+            if base64_data:
+                return Seg(type="emoji", data=base64_data)
+            elif cdnurl:
+                # 有 URL，使用 imageurl 类型
+                return Seg(type="imageurl", data=cdnurl)
+            else:
+                # 没有可用数据
+                return Seg(type="emoji", data="")
 
         # 文件
         elif comp_type == ComponentType.File:

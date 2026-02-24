@@ -191,13 +191,38 @@ class MaiBotToAstrBot:
 
     @staticmethod
     def _convert_emoji(data: Any) -> Optional[Image]:
-        """转换表情包消息"""
+        """
+        转换表情包消息
+
+        支持的格式:
+        - 字符串: base64 数据、URL、文件路径
+        - 字典: {"base64": ..., "url": ..., "file": ..., "md5": ...}
+        """
         if isinstance(data, str):
             if data.startswith("data:image"):
                 base64_data = data.split(",", 1)[1] if "," in data else data
                 return Image.fromBase64(base64_data)
+            elif data.startswith("base64://"):
+                return Image.fromBase64(data[9:])
             elif data.startswith("http"):
                 return Image.fromURL(data)
+            else:
+                # 可能是文件路径
+                return Image(file=data)
+
+        elif isinstance(data, dict):
+            # 优先使用 base64
+            if "base64" in data and data["base64"]:
+                return Image.fromBase64(data["base64"])
+            # 其次使用 URL (包括微信 cdnurl)
+            elif "url" in data and data["url"]:
+                return Image.fromURL(data["url"])
+            elif "cdnurl" in data and data["cdnurl"]:
+                return Image.fromURL(data["cdnurl"])
+            # 最后使用文件路径
+            elif "file" in data and data["file"]:
+                return Image(file=data["file"])
+
         return None
 
     @staticmethod

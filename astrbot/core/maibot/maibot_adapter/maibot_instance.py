@@ -707,32 +707,22 @@ class MaibotInstanceManager:
     async def _heartbeat_loop(self, instance: MaibotInstance) -> None:
         """心跳检测循环（独立运行）
 
-        专注于心跳检测，不处理其他消息
+        只负责发送 ping，不从 output_queue 读取消息。
+        pong 响应由 _message_loop 统一处理。
         """
         instance_id = instance.instance_id
 
         while instance.status == InstanceStatus.RUNNING:
             try:
-                # 1. 发送 ping
+                # 发送 ping
                 if instance.input_queue:
                     try:
                         instance.input_queue.put_nowait({"type": "ping"})
                     except Exception:
                         pass
 
-                # 2. 快速检查是否有 pong（不阻塞）
-                if instance.output_queue:
-                    pong_count = 0
-                    while pong_count < 10:  # 最多处理10个，避免积压
-                        try:
-                            if instance.output_queue.empty():
-                                break
-                            msg = instance.output_queue.get_nowait()
-                            if msg.get("type") == "pong":
-                                instance.last_heartbeat = datetime.now()
-                                pong_count += 1
-                        except Exception:
-                            break
+                # 注意：不再从 output_queue 读取消息！
+                # pong 响应由 _message_loop 统一处理，避免消息被意外丢弃
 
                 # 3. 检测心跳超时
                 if instance.last_heartbeat:
