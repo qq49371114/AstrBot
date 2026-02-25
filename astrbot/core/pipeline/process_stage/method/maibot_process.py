@@ -46,8 +46,7 @@ class MaiBotProcessSubStage(Stage):
 
         # 动态检查 MaiBot 多实例管理器是否已初始化
         try:
-            from astrbot.core.maibot.maibot_adapter.maibot_instance import get_instance_manager
-            from astrbot.core.maibot.maibot_adapter import get_astrbot_adapter
+            from astrbot.core.maibot.maibot_adapter import get_instance_manager, get_astrbot_adapter
 
             self.maibot_manager = get_instance_manager()
             self.adapter = get_astrbot_adapter()

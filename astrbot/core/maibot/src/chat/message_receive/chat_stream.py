@@ -333,13 +333,13 @@ class ChatManager:
                 "platform": s_data_dict["platform"],
                 "create_time": s_data_dict["create_time"],
                 "last_active_time": s_data_dict["last_active_time"],
-                "user_platform": user_info_d["platform"] if user_info_d else "",
-                "user_id": user_info_d["user_id"] if user_info_d else "",
-                "user_nickname": user_info_d["user_nickname"] if user_info_d else "",
+                "user_platform": user_info_d.get("platform", "") if user_info_d else "",
+                "user_id": user_info_d.get("user_id", "") if user_info_d else "",
+                "user_nickname": user_info_d.get("user_nickname", "") if user_info_d else "",
                 "user_cardname": user_info_d.get("user_cardname", "") if user_info_d else None,
-                "group_platform": group_info_d["platform"] if group_info_d else "",
-                "group_id": group_info_d["group_id"] if group_info_d else "",
-                "group_name": group_info_d["group_name"] if group_info_d else "",
+                "group_platform": group_info_d.get("platform", "") if group_info_d else "",
+                "group_id": group_info_d.get("group_id", "") if group_info_d else "",
+                "group_name": group_info_d.get("group_name", "") if group_info_d else "",
             }
 
             ChatStreams.replace(stream_id=s_data_dict["stream_id"], **fields_to_save).execute()

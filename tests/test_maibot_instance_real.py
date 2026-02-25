@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from astrbot.core.maibot.maibot_adapter import (
     initialize_instance_manager,
+    InstanceStatus,
 )
-from astrbot.core.maibot_instance import InstanceStatus
 
 
 async def test_real_lifecycle():
