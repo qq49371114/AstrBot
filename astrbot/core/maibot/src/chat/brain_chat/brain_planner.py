@@ -53,10 +53,12 @@ def init_prompt():
 reply
 动作描述：
 进行回复，你可以自然的顺着正在进行的聊天内容进行回复或自然的提出一个问题
+如果需要从资料库检索信息（专业知识、事实信息、人物事件、报价信息等），将关键词写入kb_keywords中（每个词6字以下，最多5个）
 {{
     "action": "reply",
     "target_message_id":"想要回复的消息id",
-    "reason":"回复的原因"
+    "reason":"回复的原因",
+    "kb_keywords":["关键词1","关键词2"]
 }}
 
 wait

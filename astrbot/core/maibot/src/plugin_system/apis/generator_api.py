@@ -95,6 +95,7 @@ async def generate_reply(
     request_type: str = "generator_api",
     from_plugin: bool = True,
     reply_time_point: Optional[float] = None,
+    kb_query_prompt: str = "",
 ) -> Tuple[bool, Optional["LLMGenerationDataModel"]]:
     """生成回复
 
@@ -116,6 +117,7 @@ async def generate_reply(
         request_type: 请求类型（可选，记录LLM使用）
         from_plugin: 是否来自插件
         reply_time_point: 回复时间点
+        kb_query_prompt: 知识库查询提示词（第一次查询中/第二次带结果）
     Returns:
         Tuple[bool, List[Tuple[str, Any]], Optional[str]]: (是否成功, 回复集合, 提示词)
     """
@@ -164,6 +166,7 @@ async def generate_reply(
             stream_id=chat_stream.stream_id if chat_stream else chat_id,
             reply_time_point=reply_time_point,
             log_reply=False,
+            kb_query_prompt=kb_query_prompt,
         )
         if not success:
             logger.warning("[GeneratorAPI] 回复生成失败")

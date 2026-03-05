@@ -75,9 +75,9 @@ class MaiBotProcessSubStage(Stage):
             # 获取转换器
             from astrbot.core.maibot.maibot_adapter.recv_handler import AstrBotToMaiBot
 
-            # 获取实例ID
+            # 获取实例ID（使用配置文件中的 maibot_instance_id 字段）
             maibot_settings = self.config.get("maibot_processing", {})
-            instance_id = maibot_settings.get("instance_id", "default")
+            instance_id = maibot_settings.get("maibot_instance_id", "") or "default"
 
             # 使用 unified_msg_origin 作为唯一标识符
             unified_msg_origin = event.unified_msg_origin

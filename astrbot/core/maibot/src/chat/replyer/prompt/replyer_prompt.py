@@ -4,9 +4,8 @@ from astrbot.core.maibot.src.chat.utils.prompt_builder import Prompt
 
 def init_replyer_prompt():
     Prompt(
-        """{knowledge_prompt}{tool_info_block}{extra_info_block}{astrbot_knowledge}
+        """{knowledge_prompt}{tool_info_block}{extra_info_block}
 {expression_habits_block}{memory_retrieval}{jargon_explanation}
-如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
 
 你正在qq群里聊天，下面是群里正在聊的内容，其中包含聊天记录和聊天中的图片
 其中标注 {bot_name}(你) 的发言是你自己的发言，请注意区分:
@@ -20,6 +19,8 @@ def init_replyer_prompt():
 尽量简短一些。{keywords_reaction_prompt}
 请注意把握聊天内容，不要回复的太有条理。
 {reply_style}
+如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
+{astrbot_knowledge}
 请注意不要输出多余内容(包括不必要的前后缀，冒号，括号，表情包，at或 @等 )，只输出发言内容就好。
 最好一次对一个话题进行回复，免得啰嗦或者回复内容太乱。
 现在，你说：""",
@@ -27,9 +28,8 @@ def init_replyer_prompt():
     )
 
     Prompt(
-        """{knowledge_prompt}{tool_info_block}{extra_info_block}{astrbot_knowledge}
+        """{knowledge_prompt}{tool_info_block}{extra_info_block}
 {expression_habits_block}{memory_retrieval}{jargon_explanation}
-如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
 
 你正在qq群里聊天，下面是群里正在聊的内容，其中包含聊天记录和聊天中的图片
 其中标注 {bot_name}(你) 的发言是你自己的发言，请注意区分:
@@ -44,6 +44,8 @@ def init_replyer_prompt():
 {keywords_reaction_prompt}
 请注意把握聊天内容。
 {reply_style}
+如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
+{astrbot_knowledge}
 请注意不要输出多余内容(包括不必要的前后缀，冒号，括号，at或 @等 )，只输出发言内容就好。
 现在，你说：""",
         "replyer_prompt",

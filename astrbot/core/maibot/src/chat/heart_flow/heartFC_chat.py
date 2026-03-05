@@ -25,6 +25,14 @@ from astrbot.core.maibot.src.person_info.person_info import Person
 from astrbot.core.maibot.src.plugin_system.base.component_types import EventType, ActionInfo
 from astrbot.core.maibot.src.plugin_system.core import events_manager
 from astrbot.core.maibot.src.plugin_system.apis import generator_api, send_api, message_api, database_api
+from astrbot.core.maibot.src.chat.knowledge.planner.kb_query_manager import (
+    execute_kb_query,
+    execute_kb_long_thinking,
+    KBQueryResult,
+    get_querying_prompt,
+    get_result_prompt,
+    KBQueryStatus,
+)
 from astrbot.core.maibot.src.chat.utils.chat_message_builder import (
     build_readable_messages_with_id,
     get_raw_msg_before_timestamp_with_chat,
@@ -653,6 +661,7 @@ class HeartFChatting:
 
                     # 从 Planner 的 action_data 中提取未知词语列表（仅在 reply 时使用）
                     unknown_words = None
+                    kb_keywords = None
                     quote_message = None
                     if isinstance(action_planner_info.action_data, dict):
                         uw = action_planner_info.action_data.get("unknown_words")
@@ -665,7 +674,12 @@ class HeartFChatting:
                                         cleaned_uw.append(s)
                             if cleaned_uw:
                                 unknown_words = cleaned_uw
-                        
+
+                        # 提取 kb_keywords
+                        kw = action_planner_info.action_data.get("kb_keywords")
+                        if isinstance(kw, list):
+                            kb_keywords = [k for k in kw if isinstance(k, str) and k.strip()]
+
                         # 从 Planner 的 action_data 中提取 quote_message 参数
                         qm = action_planner_info.action_data.get("quote")
                         if qm is not None:
@@ -676,9 +690,139 @@ class HeartFChatting:
                                 quote_message = qm.lower() in ("true", "1", "yes")
                             elif isinstance(qm, (int, float)):
                                 quote_message = bool(qm)
-                                
+
                         logger.info(f"{self.log_prefix} {qm}引用回复设置: {quote_message}")
 
+                    # 如果有 kb_keywords，执行两次回复流程
+                    if kb_keywords:
+                        logger.info(f"{self.log_prefix}检测到 kb_keywords={kb_keywords}，执行两次回复流程")
+
+                        # ========== 第一次回复：告知用户正在查询 ==========
+                        first_reply_text = ""
+                        first_loop_info = None
+
+                        success, llm_response = await generator_api.generate_reply(
+                            chat_stream=self.chat_stream,
+                            reply_message=action_planner_info.action_message,
+                            available_actions=available_actions,
+                            chosen_actions=chosen_action_plan_infos,
+                            reply_reason=planner_reasoning,
+                            unknown_words=unknown_words,
+                            enable_tool=global_config.tool.enable_tool,
+                            request_type="replyer",
+                            from_plugin=False,
+                            reply_time_point=action_planner_info.action_data.get("loop_start_time", time.time()),
+                            think_level=think_level,
+                            kb_query_prompt=get_querying_prompt(),
+                        )
+
+                        if success and llm_response and llm_response.reply_set:
+                            # 发送第一次回复
+                            response_set = llm_response.reply_set
+                            selected_expressions = llm_response.selected_expressions
+                            first_loop_info, first_reply_text, _ = await self._send_and_store_reply(
+                                response_set=response_set,
+                                action_message=action_planner_info.action_message,
+                                cycle_timers=cycle_timers,
+                                thinking_id=thinking_id,
+                                actions=chosen_action_plan_infos,
+                                selected_expressions=selected_expressions,
+                                quote_message=quote_message,
+                            )
+                            logger.info(f"{self.log_prefix}第一次回复已发送: {first_reply_text[:50]}...")
+
+                        # ========== 第二次回复：等待查询完成 ==========
+                        logger.info(f"{self.log_prefix}等待知识库查询完成...")
+
+                        # 检查是否启用长思考模式
+                        from astrbot.core.maibot.src.chat.knowledge.planner.kb_query_manager import get_kb_config
+                        kb_config = get_kb_config()
+                        long_thinking_enabled = kb_config.get("long_thinking_enabled", False)
+
+                        if long_thinking_enabled:
+                            # 长思考模式：需要两次调用
+                            # 1. 先获取当前消息和聊天历史
+                            current_message = ""
+                            if action_planner_info.action_message:
+                                current_message = getattr(action_planner_info.action_message, "processed_plain_text", "")
+
+                            chat_history = []
+                            try:
+                                loop_start_time = action_planner_info.action_data.get("loop_start_time", time.time())
+                                chat_history = get_raw_msg_before_timestamp_with_chat(
+                                    self.chat_stream.stream_id, loop_start_time, limit=10
+                                )
+                            except Exception as e:
+                                logger.warning(f"{self.log_prefix}获取聊天历史失败: {e}")
+
+                            # 2. 调用长思考模式（内部会先用普通查询，再用大模型处理）
+                            kb_result: KBQueryResult = await execute_kb_long_thinking(
+                                self.chat_stream, kb_keywords, chat_history, current_message
+                            )
+                        else:
+                            # 短思考模式：直接调用一次知识库查询
+                            kb_result: KBQueryResult = await execute_kb_query(
+                                self.chat_stream, kb_keywords
+                            )
+
+                        if kb_result.status == KBQueryStatus.COMPLETED:
+                            logger.info(f"{self.log_prefix}知识库查询完成，生成最终回复")
+
+                            success, llm_response = await generator_api.generate_reply(
+                                chat_stream=self.chat_stream,
+                                reply_message=action_planner_info.action_message,
+                                available_actions=available_actions,
+                                chosen_actions=chosen_action_plan_infos,
+                                reply_reason=planner_reasoning,
+                                unknown_words=unknown_words,
+                                enable_tool=global_config.tool.enable_tool,
+                                request_type="replyer",
+                                from_plugin=False,
+                                reply_time_point=action_planner_info.action_data.get("loop_start_time", time.time()),
+                                think_level=think_level,
+                                kb_query_prompt=get_result_prompt(kb_result),
+                            )
+
+                            if success and llm_response and llm_response.reply_set:
+                                response_set = llm_response.reply_set
+                                selected_expressions = llm_response.selected_expressions
+                                loop_info, reply_text, _ = await self._send_and_store_reply(
+                                    response_set=response_set,
+                                    action_message=action_planner_info.action_message,
+                                    cycle_timers=cycle_timers,
+                                    thinking_id=thinking_id,
+                                    actions=chosen_action_plan_infos,
+                                    selected_expressions=selected_expressions,
+                                    quote_message=quote_message,
+                                )
+                                logger.info(f"{self.log_prefix}最终回复已发送: {reply_text[:50]}...")
+                                self.last_active_time = time.time()
+                                return {
+                                    "action_type": "reply",
+                                    "success": True,
+                                    "reply_text": reply_text,
+                                    "loop_info": loop_info,
+                                }
+                            else:
+                                logger.info("第二次回复生成失败，使用第一次回复作为最终结果")
+                                self.last_active_time = time.time()
+                                return {
+                                    "action_type": "reply",
+                                    "success": True,
+                                    "reply_text": first_reply_text,
+                                    "loop_info": first_loop_info,
+                                }
+                        else:
+                            logger.info(f"知识库查询失败或无结果，状态: {kb_result.status}")
+                            self.last_active_time = time.time()
+                            return {
+                                "action_type": "reply",
+                                "success": True,
+                                "reply_text": first_reply_text,
+                                "loop_info": first_loop_info,
+                            }
+
+                    # 无 kb_keywords，普通流程
                     success, llm_response = await generator_api.generate_reply(
                         chat_stream=self.chat_stream,
                         reply_message=action_planner_info.action_message,

@@ -84,6 +84,7 @@ class MaibotInstanceManager:
             "kb_names": [],
             "fusion_top_k": 5,
             "return_top_k": 20,
+            "long_thinking_enabled": False,
         }
 
         needs_save = False
@@ -718,8 +719,19 @@ class MaibotInstanceManager:
                 return
 
             if not kb_names:
-                self._send_kb_result(instance, request_id, True, results=[])
-                return
+                # 如果未指定知识库，自动获取所有可用知识库
+                try:
+                    all_kbs = await kb_manager.list_kbs()
+                    kb_names = [kb.kb_name for kb in all_kbs if kb.kb_name]
+                    if not kb_names:
+                        logger.info(f"[{instance.instance_id}] 没有可用的知识库")
+                        self._send_kb_result(instance, request_id, True, results=[])
+                        return
+                    logger.info(f"[{instance.instance_id}] 未指定知识库，自动使用所有知识库: {kb_names}")
+                except Exception as e:
+                    logger.warning(f"[{instance.instance_id}] 获取知识库列表失败: {e}")
+                    self._send_kb_result(instance, request_id, True, results=[])
+                    return
 
             logger.info(f"[{instance.instance_id}] 知识库检索: {query[:50]}...")
             result = await kb_manager.retrieve(query=query, kb_names=kb_names, top_k_fusion=top_k_fusion, top_m_final=top_m_final)

@@ -213,17 +213,19 @@ async def subprocess_main_async(
             kb_names = kb_config.get("kb_names", [])
             fusion_top_k = kb_config.get("fusion_top_k", 5)
             return_top_k = kb_config.get("return_top_k", 20)
-            if kb_names:
-                adapter = create_kb_adapter(
-                    kb_names=kb_names,
-                    fusion_top_k=fusion_top_k,
-                    return_top_k=return_top_k,
-                )
-                send_log("info", f"知识库适配器已创建: kb_names={kb_names}")
-            else:
-                send_log("info", "知识库适配器已启用但未指定知识库名称，跳过创建")
-        else:
-            send_log("info", "知识库适配器未启用")
+
+            # 设置知识库配置到 kb_query_manager（用于长思考模式等）
+            from astrbot.core.maibot.src.chat.knowledge.planner.kb_query_manager import set_kb_config
+            set_kb_config(kb_config)
+            send_log("info", f"知识库配置已设置: long_thinking_enabled={kb_config.get('long_thinking_enabled', False)}")
+
+            # 即使 kb_names 为空也创建适配器，让适配器自动获取所有知识库
+            adapter = create_kb_adapter(
+                kb_names=kb_names,  # 传空列表，由适配器自行获取所有知识库
+                fusion_top_k=fusion_top_k,
+                return_top_k=return_top_k,
+            )
+            send_log("info", f"知识库适配器已创建: kb_names={kb_names if kb_names else '(自动获取所有)'}")
 
         # 6. 消息处理函数
         async def _handle_message(message_data: Dict[str, Any], unified_msg_origin: str) -> None:

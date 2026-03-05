@@ -3,9 +3,8 @@ from astrbot.core.maibot.src.chat.utils.prompt_builder import Prompt
 
 def init_replyer_private_prompt():
     Prompt(
-        """{knowledge_prompt}{tool_info_block}{extra_info_block}{astrbot_knowledge}
+        """{knowledge_prompt}{tool_info_block}{extra_info_block}
     {expression_habits_block}{memory_retrieval}{jargon_explanation}
-    如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
 
     你正在和{sender_name}聊天，这是你们之前聊的内容:
     {time_block}
@@ -17,15 +16,16 @@ def init_replyer_private_prompt():
     {chat_prompt}你正在和{sender_name}聊天,现在请你读读之前的聊天记录，然后给出日常且口语化的回复，平淡一些，
     尽量简短一些。{keywords_reaction_prompt}请注意把握聊天内容，不要回复的太有条理。
     {reply_style}
+    如果要回答具体的的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
+    {astrbot_knowledge}
     请注意不要输出多余内容(包括前后缀，冒号和引号，括号，表情等)，只输出回复内容。
     {moderation_prompt}不要输出多余内容(包括前后缀，冒号和引号，括号，表情包，at或 @等 )。""",
         "private_replyer_prompt",
     )
 
     Prompt(
-        """{knowledge_prompt}{tool_info_block}{extra_info_block}{astrbot_knowledge}
+        """{knowledge_prompt}{tool_info_block}{extra_info_block}
 {expression_habits_block}{memory_retrieval}{jargon_explanation}
-如果要回答具体的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
 
 你正在和{sender_name}聊天，这是你们之前聊的内容:
 {time_block}
@@ -36,6 +36,8 @@ def init_replyer_private_prompt():
 {identity}
 {chat_prompt}尽量简短一些。{keywords_reaction_prompt}请注意把握聊天内容，不要回复的太有条理，可以有个性。
 {reply_style}
+如果要回答具体的数据、背景信息，上下文里没有就不要回答，不知道就好，不要编造
+{astrbot_knowledge}
 请注意不要输出多余内容(包括前后缀，冒号和引号，括号，表情等)，只输出回复内容。
 {moderation_prompt}不要输出多余内容(包括冒号和引号，括号，表情包，at或 @等 )。
 """,

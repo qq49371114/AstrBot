@@ -121,9 +121,9 @@ class KnowledgeBaseAdapter:
         kb_names = kb_names or self.kb_names
         top_k = top_k or self.fusion_top_k
 
+        # 即使 kb_names 为空，也发送请求到主进程，让主进程自动获取所有知识库
         if not kb_names:
-            logger.debug("[KB Adapter] 未指定知识库，跳过检索")
-            return []
+            logger.debug("[KB Adapter] 未指定知识库，将请求主进程获取所有知识库")
 
         try:
             # 发送检索请求到主进程

@@ -37,7 +37,6 @@ from astrbot.core.maibot.src.chat.replyer.prompt.replyer_prompt import init_repl
 from astrbot.core.maibot.src.chat.replyer.prompt.rewrite_prompt import init_rewrite_prompt
 from astrbot.core.maibot.src.memory_system.memory_retrieval import init_memory_retrieval_prompt, build_memory_retrieval_prompt
 from astrbot.core.maibot.src.bw_learner.jargon_explainer import explain_jargon_in_context, retrieve_concepts_with_jargon
-from astrbot.core.maibot.src.chat.knowledge.astrbot_knowledge_retrieval import build_astrbot_knowledge_prompt
 
 init_lpmm_prompt()
 init_replyer_prompt()
@@ -77,6 +76,7 @@ class DefaultReplyer:
         think_level: int = 1,
         unknown_words: Optional[List[str]] = None,
         log_reply: bool = True,
+        kb_query_prompt: str = "",
     ) -> Tuple[bool, LLMGenerationDataModel]:
         # sourcery skip: merge-nested-ifs
         """
@@ -119,6 +119,7 @@ class DefaultReplyer:
                     reply_time_point=reply_time_point,
                     think_level=think_level,
                     unknown_words=unknown_words,
+                    kb_query_prompt=kb_query_prompt,
                 )
             prompt_duration_ms = (time.perf_counter() - prompt_start) * 1000
             llm_response.prompt = prompt
@@ -758,6 +759,7 @@ class DefaultReplyer:
         reply_time_point: Optional[float] = time.time(),
         think_level: int = 1,
         unknown_words: Optional[List[str]] = None,
+        kb_query_prompt: str = "",
     ) -> Tuple[str, List[int], List[str], str]:
         """
         构建回复器上下文
@@ -864,6 +866,18 @@ class DefaultReplyer:
                         kb_keywords = [k for k in kw if isinstance(k, str) and k.strip()]
                     break
 
+        # 知识库查询逻辑：
+        # 1. 如果传入了 kb_query_prompt（两次回复流程），直接使用
+        # 2. 否则返回空（知识库查询已移交 brain_chat/heartFC_chat 处理）
+        if kb_query_prompt:
+            async def kb_task():
+                return kb_query_prompt
+            kb_coroutine = kb_task()
+        else:
+            async def kb_task():
+                return ""
+            kb_coroutine = kb_task()
+
         # 并行执行构建任务（包括黑话解释，可配置关闭）
         task_results = await asyncio.gather(
             self._time_and_run_task(
@@ -883,12 +897,7 @@ class DefaultReplyer:
                 "memory_retrieval",
             ),
             self._time_and_run_task(jargon_coroutine, "jargon_explanation"),
-            self._time_and_run_task(
-                build_astrbot_knowledge_prompt(
-                    chat_talking_prompt_short, sender, target, self.chat_stream, kb_keywords=kb_keywords
-                ),
-                "astrbot_knowledge",
-            ),
+            self._time_and_run_task(kb_coroutine, "astrbot_knowledge"),
         )
 
         # 任务名称中英文映射
