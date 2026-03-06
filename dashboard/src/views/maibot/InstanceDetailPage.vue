@@ -521,6 +521,15 @@
             <v-row>
               <v-col cols="12">
                 <v-switch
+                  v-model="metadataForm.lifecycle.auto_start"
+                  label="AstrBot 启动时自动启动"
+                  color="primary"
+                  density="compact"
+                  hide-details
+                ></v-switch>
+              </v-col>
+              <v-col cols="12">
+                <v-switch
                   v-model="metadataForm.lifecycle.restart_on_crash"
                   label="崩溃后自动重启"
                   color="primary"
@@ -582,6 +591,16 @@
                   color="primary"
                   density="compact"
                   hide-details
+                ></v-switch>
+              </v-col>
+              <v-col cols="12">
+                <v-switch
+                  v-model="metadataForm.knowledge_base.long_thinking_enabled"
+                  label="启用长思考"
+                  color="primary"
+                  density="compact"
+                  hide-details
+                  :disabled="!metadataForm.knowledge_base.enabled"
                 ></v-switch>
               </v-col>
               <v-col cols="12">
@@ -718,6 +737,7 @@ const metadataForm = ref({
   enable_webui: false,
   enable_socket: false,
   lifecycle: {
+    auto_start: true,
     restart_on_crash: true,
     max_restarts: 3,
     restart_delay: 5000,
@@ -732,6 +752,7 @@ const metadataForm = ref({
     kb_names: [] as string[],
     fusion_top_k: 5,
     return_top_k: 20,
+    long_thinking_enabled: false,
   },
 });
 
@@ -1172,6 +1193,7 @@ const openEditMetadataDialog = () => {
     enable_webui: currentInstance.value.enable_webui || false,
     enable_socket: currentInstance.value.enable_socket || false,
     lifecycle: {
+      auto_start: currentInstance.value.lifecycle?.auto_start ?? true,
       restart_on_crash:
         currentInstance.value.lifecycle?.restart_on_crash ?? true,
       max_restarts: currentInstance.value.lifecycle?.max_restarts ?? 3,
@@ -1187,6 +1209,7 @@ const openEditMetadataDialog = () => {
       kb_names: currentInstance.value.knowledge_base?.kb_names || [],
       fusion_top_k: currentInstance.value.knowledge_base?.fusion_top_k ?? 5,
       return_top_k: currentInstance.value.knowledge_base?.return_top_k ?? 20,
+      long_thinking_enabled: currentInstance.value.knowledge_base?.long_thinking_enabled ?? false,
     },
   };
 

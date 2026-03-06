@@ -57,6 +57,11 @@ class MaiBotManagerRoute(Route):
                 ("GET", self.get_default_instance),
                 ("PUT", self.set_default_instance),
             ],
+            # ============ 文本库 data.txt 管理 ============
+            "/maibot/data": [
+                ("GET", self.get_data_txt),
+                ("PUT", self.save_data_txt),
+            ],
             # ============ 路由规则管理 ============
             "/maibot/routing/rules": [
                 ("GET", self.get_routing_rules),
@@ -865,6 +870,61 @@ class MaiBotManagerRoute(Route):
         except Exception as e:
             logger.error(f"下载实例 {instance_id} 日志失败: {e}", exc_info=True)
             return Response().error(f"下载日志失败: {e}").__dict__, 500
+
+    # ============ 文本库 data.txt 管理 ============
+
+    def _get_data_txt_path(self) -> str:
+        """获取共用的 data.txt 文件路径"""
+        # 共用 data.txt: D:\work\Bot\data\maibot\data.txt
+        # 使用 astrbot_data_path 获取正确路径
+        data_dir = get_astrbot_data_path()
+        return os.path.join(data_dir, "maibot", "data.txt")
+
+    async def get_data_txt(self):
+        """获取 data.txt 内容"""
+        try:
+            data_txt_path = self._get_data_txt_path()
+
+            if not os.path.exists(data_txt_path):
+                # 文件不存在，返回空内容
+                return Response().ok({
+                    "content": "",
+                    "exists": False,
+                }).__dict__
+
+            with open(data_txt_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            return Response().ok({
+                "content": content,
+                "exists": True,
+            }).__dict__
+
+        except Exception as e:
+            logger.error(f"获取实例 {instance_id} 的 data.txt 失败: {e}", exc_info=True)
+            return Response().error(f"获取文件失败: {e}").__dict__, 500
+
+    async def save_data_txt(self):
+        """保存 data.txt 内容"""
+        try:
+            data_txt_path = self._get_data_txt_path()
+
+            # 确保目录存在
+            os.makedirs(os.path.dirname(data_txt_path), exist_ok=True)
+
+            data = await request.get_json()
+            content = data.get("content", "")
+
+            with open(data_txt_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            return Response().ok({
+                "message": "文本库已保存",
+            }).__dict__
+
+        except Exception as e:
+            logger.error(f"保存 data.txt 失败: {e}", exc_info=True)
+            return Response().error(f"保存文件失败: {e}").__dict__, 500
 
     @property
     def maibot_adapter(self):

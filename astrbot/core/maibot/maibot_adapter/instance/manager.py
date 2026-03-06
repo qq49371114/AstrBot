@@ -74,6 +74,7 @@ class MaibotInstanceManager:
             "restart_on_crash": True,
             "max_restarts": 3,
             "restart_delay": 5000,
+            "auto_start": True,  # 是否在 AstrBot 启动时自动启动该实例
         }
         default_logging = {
             "enable_console": True,

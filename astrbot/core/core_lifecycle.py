@@ -385,7 +385,7 @@ class AstrBotCoreLifecycle:
             logger.error(f"MaiBot 实例管理器初始化失败: {e}", exc_info=True)
 
     async def _auto_start_maibot_instances(self) -> None:
-        """按启动顺序自动启动所有 MaiBot 实例"""
+        """按启动顺序自动启动所有配置为自动启动的 MaiBot 实例"""
         if not self.maibot_manager:
             return
 
@@ -394,6 +394,12 @@ class AstrBotCoreLifecycle:
         instances.sort(key=lambda x: x.lifecycle.get("start_order", 0))
 
         for instance in instances:
+            # 检查是否配置了自动启动
+            auto_start = instance.lifecycle.get("auto_start", True)  # 默认为 True 保持向后兼容
+            if not auto_start:
+                logger.info(f"MaiBot 实例 {instance.instance_id} 已配置为不自动启动，跳过")
+                continue
+
             logger.info(f"自动启动 MaiBot 实例: {instance.instance_id}")
             asyncio.create_task(self.maibot_manager.start_instance(instance.instance_id))
             # 等待启动完成

@@ -60,6 +60,7 @@ export interface InstanceInfo {
     restart_on_crash?: boolean;
     max_restarts?: number;
     restart_delay?: number;
+    auto_start?: boolean;
   };
   logging?: {
     enable_console?: boolean;
@@ -71,6 +72,7 @@ export interface InstanceInfo {
     kb_names?: string[];
     fusion_top_k?: number;
     return_top_k?: number;
+    long_thinking_enabled?: boolean;
   };
   created_at: string;
   updated_at: string;
@@ -229,6 +231,7 @@ export async function updateInstance(
       restart_on_crash?: boolean;
       max_restarts?: number;
       restart_delay?: number;
+      auto_start?: boolean;
     };
     host?: string;
     port?: number;
@@ -246,6 +249,7 @@ export async function updateInstance(
       kb_names?: string[];
       fusion_top_k?: number;
       return_top_k?: number;
+      long_thinking_enabled?: boolean;
     };
   },
 ): Promise<InstanceInfo> {
@@ -499,6 +503,47 @@ export async function downloadInstanceLogs(instanceId: string): Promise<void> {
   }
 }
 
+
+
+/**
+ * 获取共用的 data.txt 内容
+ */
+export async function getDataTxt(): Promise<{
+  content: string;
+  exists: boolean;
+}> {
+  try {
+    const response = await apiClient.get<ApiResponse>("/data");
+    if (response.data.status === "ok" && response.data.data) {
+      return {
+        content: response.data.data.content || "",
+        exists: response.data.data.exists || false,
+      };
+    }
+    throw new Error(response.data.message || "获取文本库失败");
+  } catch (error) {
+    console.error("获取文本库失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 保存共用的 data.txt 内容
+ */
+export async function saveDataTxt(content: string): Promise<void> {
+  try {
+    const response = await apiClient.put<ApiResponse>("/data", {
+      content,
+    });
+    if (response.data.status !== "ok") {
+      throw new Error(response.data.message || "保存文本库失败");
+    }
+  } catch (error) {
+    console.error("保存文本库失败:", error);
+    throw error;
+  }
+}
+
 /**
  * 获取默认模板配置
  */
@@ -535,4 +580,6 @@ export default {
   getInstanceLogs,
   clearInstanceLogs,
   downloadInstanceLogs,
+  getDataTxt,
+  saveDataTxt,
 };

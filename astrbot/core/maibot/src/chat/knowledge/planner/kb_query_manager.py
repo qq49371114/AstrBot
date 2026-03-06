@@ -209,7 +209,7 @@ def _get_data_txt_content() -> str:
     try:
         from astrbot.core.maibot.src.config.context import get_context
         context = get_context()
-        # 修正路径：data/knowledge_base/data.txt
+        # 修正路径：data/data.txt
         data_txt_path = os.path.join(context.get_project_root(), "data.txt")
         logger.debug(f"尝试读取 data.txt，路径: {data_txt_path}")
         if os.path.exists(data_txt_path):

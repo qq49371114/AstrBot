@@ -56,6 +56,7 @@ class MaibotInstance:
             "restart_on_crash": True,   # 崩溃后自动重启
             "max_restarts": 3,          # 最大重启次数
             "restart_delay": 5000,      # 重启延迟（毫秒）
+            "auto_start": True,         # AstrBot 启动时是否自动启动此实例
         }
 
         # 日志配置
