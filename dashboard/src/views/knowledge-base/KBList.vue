@@ -15,6 +15,9 @@
       <v-btn prepend-icon="mdi-plus" color="primary" variant="elevated" @click="showCreateDialog = true">
         {{ t('list.create') }}
       </v-btn>
+      <v-btn prepend-icon="mdi-file-document-edit" variant="tonal" color="info" @click="loadDataTxt" :loading="dataTxtLoading">
+        编辑文本库
+      </v-btn>
       <v-btn prepend-icon="mdi-refresh" variant="tonal" @click="loadKnowledgeBases" :loading="loading">
         {{ t('list.refresh') }}
       </v-btn>
@@ -184,6 +187,47 @@
       </v-card>
     </v-dialog>
 
+    <!-- 文本库 data.txt 编辑对话框 -->
+    <v-dialog v-model="showDataTxtDialog" max-width="800px" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center pa-4">
+          <v-icon start>mdi-file-document-edit</v-icon>
+          编辑文本库 (data.txt)
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="showDataTxtDialog = false" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+            这是一个纯文本知识库，可以直接编辑内容。每行一条信息，支持格式化的文本数据。
+          </v-alert>
+          <v-textarea
+            v-model="dataTxtContent"
+            label="文本库内容"
+            variant="outlined"
+            rows="20"
+            auto-grow
+            :loading="dataTxtLoading"
+            hint="每行一条信息"
+            persistent-hint
+          />
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="showDataTxtDialog = false">取消</v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            @click="saveDataTxtHandler"
+            :loading="dataTxtSaving"
+          >
+            保存
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- 消息提示 -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color">
       {{ snackbar.text }}
@@ -201,6 +245,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useModuleI18n } from '@/i18n/composables'
+import { getDataTxt, saveDataTxt } from '@/utils/maibotApi'
 
 const { tm: t } = useModuleI18n('features/knowledge-base/index')
 const router = useRouter()
@@ -221,6 +266,12 @@ const pendingEmbeddingProvider = ref<string | null>(null)
 const showCreateDialog = ref(false)
 const showEmojiPicker = ref(false)
 const showDeleteDialog = ref(false)
+const showDataTxtDialog = ref(false)
+
+// 文本库 data.txt
+const dataTxtContent = ref('')
+const dataTxtLoading = ref(false)
+const dataTxtSaving = ref(false)
 
 // Snackbar 通知
 const snackbar = ref({
@@ -431,6 +482,34 @@ const showSnackbar = (text: string, color: string = 'success') => {
   snackbar.value.text = text
   snackbar.value.color = color
   snackbar.value.show = true
+}
+
+// 加载文本库 data.txt
+const loadDataTxt = async () => {
+  dataTxtLoading.value = true
+  try {
+    const result = await getDataTxt()
+    dataTxtContent.value = result.content
+    showDataTxtDialog.value = true
+  } catch (error: any) {
+    showSnackbar(error.message || '加载文本库失败', 'error')
+  } finally {
+    dataTxtLoading.value = false
+  }
+}
+
+// 保存文本库 data.txt
+const saveDataTxtHandler = async () => {
+  dataTxtSaving.value = true
+  try {
+    await saveDataTxt(dataTxtContent.value)
+    showSnackbar('文本库已保存', 'success')
+    showDataTxtDialog.value = false
+  } catch (error: any) {
+    showSnackbar(error.message || '保存文本库失败', 'error')
+  } finally {
+    dataTxtSaving.value = false
+  }
 }
 
 onMounted(() => {
