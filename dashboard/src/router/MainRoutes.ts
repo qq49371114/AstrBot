@@ -1,143 +1,155 @@
 const MainRoutes = {
-  path: "/main",
+  path: '/main',
   meta: {
-    requiresAuth: true,
+    requiresAuth: true
   },
-  redirect: "/main/platforms",
-  component: () => import("@/layouts/full/FullLayout.vue"),
+  redirect: '/welcome',
+  component: () => import('@/layouts/full/FullLayout.vue'),
   children: [
     {
-      name: "MainPage",
-      path: "/",
-      component: () => import("@/views/PlatformPage.vue"),
+      name: 'MainPage',
+      path: '/',
+      component: () => import('@/views/WelcomePage.vue')
     },
     {
-      name: "Extensions",
-      path: "/extension",
-      component: () => import("@/views/ExtensionPage.vue"),
+      name: 'Welcome',
+      path: '/welcome',
+      component: () => import('@/views/WelcomePage.vue')
     },
     {
-      name: "ExtensionMarketplace",
-      path: "/extension-marketplace",
-      component: () => import("@/views/ExtensionPage.vue"),
+      name: 'Extensions',
+      path: '/extension',
+      component: () => import('@/views/ExtensionPage.vue')
     },
     {
-      name: "Platforms",
-      path: "/platforms",
-      component: () => import("@/views/PlatformPage.vue"),
+      name: 'ExtensionMarketplace',
+      path: '/extension-marketplace',
+      component: () => import('@/views/ExtensionPage.vue')
     },
     {
-      name: "Providers",
-      path: "/providers",
-      component: () => import("@/views/ProviderPage.vue"),
+      name: 'Platforms',
+      path: '/platforms',
+      component: () => import('@/views/PlatformPage.vue')
     },
     {
-      name: "Configs",
-      path: "/config",
-      component: () => import("@/views/ConfigPage.vue"),
+      name: 'Providers',
+      path: '/providers',
+      component: () => import('@/views/ProviderPage.vue')
     },
     {
-      name: "Default",
-      path: "/dashboard/default",
-      component: () =>
-        import("@/views/dashboards/default/DefaultDashboard.vue"),
+      name: 'Configs',
+      path: '/config',
+      component: () => import('@/views/ConfigPage.vue')
     },
     {
-      name: "Conversation",
-      path: "/conversation",
-      component: () => import("@/views/ConversationPage.vue"),
+      path: '/normal',
+      redirect: '/config#normal'
     },
     {
-      name: "SessionManagement",
-      path: "/session-management",
-      component: () => import("@/views/SessionManagementPage.vue"),
+      path: '/system',
+      redirect: '/config#system'
     },
     {
-      name: "Persona",
-      path: "/persona",
-      component: () => import("@/views/PersonaPage.vue"),
+      name: 'Default',
+      path: '/dashboard/default',
+      component: () => import('@/views/dashboards/default/DefaultDashboard.vue')
     },
     {
-      name: "SubAgent",
-      path: "/subagent",
-      component: () => import("@/views/SubAgentPage.vue"),
+      name: 'Conversation',
+      path: '/conversation',
+      component: () => import('@/views/ConversationPage.vue')
     },
     {
-      name: "CronJobs",
-      path: "/cron",
-      component: () => import("@/views/CronJobPage.vue"),
+      name: 'SessionManagement',
+      path: '/session-management',
+      component: () => import('@/views/SessionManagementPage.vue')
     },
     {
-      name: "Console",
-      path: "/console",
-      component: () => import("@/views/ConsolePage.vue"),
+      name: 'Persona',
+      path: '/persona',
+      component: () => import('@/views/PersonaPage.vue')
     },
     {
-      name: "Trace",
-      path: "/trace",
-      component: () => import("@/views/TracePage.vue"),
+      name: 'SubAgent',
+      path: '/subagent',
+      component: () => import('@/views/SubAgentPage.vue')
     },
     {
-      name: "NativeKnowledgeBase",
-      path: "/knowledge-base",
-      component: () => import("@/views/knowledge-base/index.vue"),
+      name: 'CronJobs',
+      path: '/cron',
+      component: () => import('@/views/CronJobPage.vue')
+    },
+    {
+      name: 'Console',
+      path: '/console',
+      component: () => import('@/views/ConsolePage.vue')
+    },
+    {
+      name: 'Trace',
+      path: '/trace',
+      component: () => import('@/views/TracePage.vue')
+    },
+    {
+      name: 'NativeKnowledgeBase',
+      path: '/knowledge-base',
+      component: () => import('@/views/knowledge-base/index.vue'),
       children: [
         {
-          path: "",
-          name: "NativeKBList",
-          component: () => import("@/views/knowledge-base/KBList.vue"),
+          path: '',
+          name: 'NativeKBList',
+          component: () => import('@/views/knowledge-base/KBList.vue'),
         },
         {
-          path: ":kbId",
-          name: "NativeKBDetail",
-          component: () => import("@/views/knowledge-base/KBDetail.vue"),
+          path: ':kbId',
+          name: 'NativeKBDetail',
+          component: () => import('@/views/knowledge-base/KBDetail.vue'),
           props: true,
         },
         {
-          path: ":kbId/document/:docId",
-          name: "NativeDocumentDetail",
-          component: () => import("@/views/knowledge-base/DocumentDetail.vue"),
+          path: ':kbId/document/:docId',
+          name: 'NativeDocumentDetail',
+          component: () => import('@/views/knowledge-base/DocumentDetail.vue'),
           props: true,
         },
       ],
     },
     {
-      name: "MaiBotInstances",
-      path: "/maibot",
-      component: () => import("@/views/maibot/InstancesPage.vue"),
-      meta: { title: "麦麦实例" },
+      name: 'MaiBotInstances',
+      path: '/maibot',
+      component: () => import('@/views/maibot/InstancesPage.vue'),
+      meta: { title: '麦麦实例' },
     },
     {
-      name: "MaiBotInstanceDetail",
-      path: "/maibot/instances/:id",
-      component: () => import("@/views/maibot/InstanceDetailPage.vue"),
-      meta: { title: "实例详情" },
+      name: 'MaiBotInstanceDetail',
+      path: '/maibot/instances/:id',
+      component: () => import('@/views/maibot/InstanceDetailPage.vue'),
+      meta: { title: '实例详情' },
       props: true,
     },
     {
-      name: "MaiBotLogs",
-      path: "/maibot/logs",
-      component: () => import("@/views/maibot/LogsPage.vue"),
-      meta: { title: "实例日志" },
+      name: 'MaiBotLogs',
+      path: '/maibot/logs',
+      component: () => import('@/views/maibot/LogsPage.vue'),
+      meta: { title: '实例日志' },
     },
     {
-      name: "CreateMaiBotInstance",
-      path: "/maibot/create",
-      component: () => import("@/views/maibot/CreateInstancePage.vue"),
-      meta: { title: "创建实例" },
+      name: 'CreateMaiBotInstance',
+      path: '/maibot/create',
+      component: () => import('@/views/maibot/CreateInstancePage.vue'),
+      meta: { title: '创建实例' },
     },
     {
-      name: "MaiBotRouting",
-      path: "/maibot/routing",
-      component: () => import("@/views/MaiBotPage.vue"),
-      meta: { title: "路由管理" },
+      name: 'MaiBotRouting',
+      path: '/maibot/routing',
+      component: () => import('@/views/MaiBotPage.vue'),
+      meta: { title: '路由管理' },
     },
 
     // 旧版本的知识库路由
     {
-      name: "KnowledgeBase",
-      path: "/alkaid/knowledge-base",
-      component: () => import("@/views/alkaid/KnowledgeBase.vue"),
+      name: 'KnowledgeBase',
+      path: '/alkaid/knowledge-base',
+      component: () => import('@/views/alkaid/KnowledgeBase.vue'),
     },
     // {
     //   name: 'Alkaid',
@@ -162,29 +174,29 @@ const MainRoutes = {
     //   ]
     // },
     {
-      name: "Chat",
-      path: "/chat",
-      component: () => import("@/views/ChatPage.vue"),
+      name: 'Chat',
+      path: '/chat',
+      component: () => import('@/views/ChatPage.vue'),
       children: [
         {
-          path: ":conversationId",
-          name: "ChatDetail",
-          component: () => import("@/views/ChatPage.vue"),
-          props: true,
-        },
-      ],
+          path: ':conversationId',
+          name: 'ChatDetail',
+          component: () => import('@/views/ChatPage.vue'),
+          props: true
+        }
+      ]
     },
     {
-      name: "Settings",
-      path: "/settings",
-      component: () => import("@/views/Settings.vue"),
+      name: 'Settings',
+      path: '/settings',
+      component: () => import('@/views/Settings.vue')
     },
     {
-      name: "About",
-      path: "/about",
-      component: () => import("@/views/AboutPage.vue"),
-    },
-  ],
+      name: 'About',
+      path: '/about',
+      component: () => import('@/views/AboutPage.vue')
+    }
+  ]
 };
 
 export default MainRoutes;

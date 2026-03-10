@@ -1,8 +1,10 @@
 <script setup>
+import MarkdownIt from 'markdown-it'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { ref, computed } from 'vue'
 import ConfigItemRenderer from './ConfigItemRenderer.vue'
 import TemplateListEditor from './TemplateListEditor.vue'
+import PersonaQuickPreview from './PersonaQuickPreview.vue'
 import { useI18n, useModuleI18n } from '@/i18n/composables'
 
 
@@ -18,16 +20,31 @@ const props = defineProps({
   metadataKey: {
     type: String,
     required: true
+  },
+  searchKeyword: {
+    type: String,
+    default: ''
   }
 })
 
 const { t } = useI18n()
 const { tm, getRaw } = useModuleI18n('features/config-metadata')
 
+const hintMarkdown = new MarkdownIt({
+  linkify: true,
+  breaks: true
+})
+
 // 翻译器函数 - 如果是国际化键则翻译，否则原样返回
 const translateIfKey = (value) => {
   if (!value || typeof value !== 'string') return value
   return tm(value)
+}
+
+const renderHint = (value) => {
+  const text = translateIfKey(value)
+  if (!text) return ''
+  return hintMarkdown.renderInline(text)
 }
 
 // 处理labels翻译 - labels可以是数组或国际化键
@@ -112,16 +129,27 @@ function saveEditedContent() {
 }
 
 function shouldShowItem(itemMeta, itemKey) {
-  if (!itemMeta?.condition) {
-    return true
-  }
-  for (const [conditionKey, expectedValue] of Object.entries(itemMeta.condition)) {
-    const actualValue = getValueBySelector(props.iterable, conditionKey)
-    if (actualValue !== expectedValue) {
-      return false
+  if (itemMeta?.condition) {
+    for (const [conditionKey, expectedValue] of Object.entries(itemMeta.condition)) {
+      const actualValue = getValueBySelector(props.iterable, conditionKey)
+      if (actualValue !== expectedValue) {
+        return false
+      }
     }
   }
-  return true
+
+  const keyword = String(props.searchKeyword || '').trim().toLowerCase()
+  if (!keyword) {
+    return true
+  }
+
+  const searchableText = [
+    itemKey,
+    translateIfKey(itemMeta?.description || ''),
+    translateIfKey(itemMeta?.hint || '')
+  ].join(' ').toLowerCase()
+
+  return searchableText.includes(keyword)
 }
 
 // 检查最外层的 object 是否应该显示
@@ -136,7 +164,10 @@ function shouldShowSection() {
       return false
     }
   }
-  return true
+
+  const sectionItems = props.metadata?.[props.metadataKey]?.items || {}
+  const hasVisibleItems = Object.entries(sectionItems).some(([itemKey, itemMeta]) => shouldShowItem(itemMeta, itemKey))
+  return hasVisibleItems
 }
 
 function hasVisibleItemsAfter(items, currentIndex) {
@@ -185,7 +216,7 @@ function getSpecialSubtype(value) {
       </v-list-item-title>
       <v-list-item-subtitle class="config-hint">
         <span v-if="metadata[metadataKey]?.obvious_hint && metadata[metadataKey]?.hint" class="important-hint">‼️</span>
-        {{ translateIfKey(metadata[metadataKey]?.hint) }}
+        <span v-html="renderHint(metadata[metadataKey]?.hint)"></span>
       </v-list-item-subtitle>
     </v-card-text>
 
@@ -205,7 +236,7 @@ function getSpecialSubtype(value) {
 
                 <v-list-item-subtitle class="property-hint">
                   <span v-if="itemMeta?.obvious_hint && itemMeta?.hint" class="important-hint">‼️</span>
-                  {{ translateIfKey(itemMeta?.hint) }}
+                  <span v-html="renderHint(itemMeta?.hint)"></span>
                 </v-list-item-subtitle>
               </v-list-item>
             </v-col>
@@ -242,6 +273,16 @@ function getSpecialSubtype(value) {
                   </v-chip>
                 </div>
               </div>
+            </v-col>
+          </v-row>
+
+          <!-- Default Persona Quick Preview 全宽显示区域 -->
+          <v-row
+            v-if="!itemMeta?.invisible && itemMeta?._special === 'select_persona' && itemKey === 'provider_settings.default_personality'"
+            class="persona-preview-row"
+          >
+            <v-col cols="12" class="persona-preview-display">
+              <PersonaQuickPreview :model-value="createSelectorModel(itemKey).value" />
             </v-col>
           </v-row>
         </template>
@@ -291,6 +332,12 @@ function getSpecialSubtype(value) {
   font-size: 0.75rem;
   color: var(--v-theme-secondaryText);
   margin-top: 2px;
+}
+
+.config-hint :deep(a),
+.property-hint :deep(a) {
+  color: var(--v-theme-primary);
+  text-decoration: underline;
 }
 
 .metadata-key,
@@ -397,6 +444,15 @@ function getSpecialSubtype(value) {
   padding: 0 8px;
 }
 
+.persona-preview-row {
+  margin: 16px;
+  margin-top: 0;
+}
+
+.persona-preview-display {
+  padding: 0 8px;
+}
+
 .selected-plugins-full-width {
   background-color: rgba(var(--v-theme-primary), 0.05);
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
@@ -418,9 +474,13 @@ function getSpecialSubtype(value) {
   }
 
   .property-info,
-  .type-indicator,
+  .type-indicator {
+    padding: 4px 8px;
+  }
+
   .config-input {
-    padding: 4px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
 }
 </style>

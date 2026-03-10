@@ -1,3 +1,4 @@
+from .api_key import ApiKeyRoute
 from .auth import AuthRoute
 from .backup import BackupRoute
 from .chat import ChatRoute
@@ -10,6 +11,7 @@ from .file import FileRoute
 from .knowledge_base import KnowledgeBaseRoute
 from .log import LogRoute
 from .maibot import MaiBotManagerRoute
+from .open_api import OpenApiRoute
 from .persona import PersonaRoute
 from .platform import PlatformRoute
 from .plugin import PluginRoute
@@ -22,6 +24,7 @@ from .tools import ToolsRoute
 from .update import UpdateRoute
 
 __all__ = [
+    "ApiKeyRoute",
     "AuthRoute",
     "BackupRoute",
     "ChatRoute",
@@ -34,6 +37,7 @@ __all__ = [
     "KnowledgeBaseRoute",
     "LogRoute",
     "MaiBotManagerRoute",
+    "OpenApiRoute",
     "PersonaRoute",
     "PlatformRoute",
     "PluginRoute",

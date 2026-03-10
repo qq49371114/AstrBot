@@ -218,6 +218,10 @@ import axios from 'axios';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor';
 import ItemCard from '@/components/shared/ItemCard.vue';
 import { useI18n, useModuleI18n } from '@/i18n/composables';
+import {
+  askForConfirmation as askForConfirmationDialog,
+  useConfirmDialog
+} from '@/utils/confirmDialog';
 
 export default {
   name: 'McpServersSection',
@@ -228,7 +232,8 @@ export default {
   setup() {
     const { t } = useI18n();
     const { tm } = useModuleI18n('features/tooluse');
-    return { t, tm };
+    const confirmDialog = useConfirmDialog();
+    return { t, tm, confirmDialog };
   },
   data() {
     return {
@@ -295,6 +300,10 @@ export default {
       this.loadingGettingServers = true;
       axios.get('/api/tools/mcp/servers')
         .then(response => {
+          if (response.data.status === 'error') {
+            this.showError(response.data.message || this.tm('messages.getServersError', { error: 'Unknown error' }));
+            return;
+          }
           this.mcpServers = response.data.data || [];
           this.mcpServers.forEach(server => {
             if (!this.mcpServerUpdateLoaders[server.name]) {
@@ -367,6 +376,10 @@ export default {
         axios.post(endpoint, serverData)
           .then(response => {
             this.loading = false;
+            if (response.data.status === 'error') {
+              this.showError(response.data.message || this.tm('messages.saveError', { error: 'Unknown error' }));
+              return;
+            }
             this.showMcpServerDialog = false;
             this.addServerDialogMessage = '';
             this.getServers();
@@ -382,18 +395,21 @@ export default {
         this.showError(this.tm('dialogs.addServer.errors.jsonParse', { error: e.message }));
       }
     },
-    deleteServer(server) {
+    async deleteServer(server) {
       const serverName = server.name || server;
-      if (confirm(this.tm('dialogs.confirmDelete', { name: serverName }))) {
-        axios.post('/api/tools/mcp/delete', { name: serverName })
-          .then(response => {
-            this.getServers();
-            this.showSuccess(response.data.message || this.tm('messages.deleteSuccess'));
-          })
-          .catch(error => {
-            this.showError(this.tm('messages.deleteError', { error: error.response?.data?.message || error.message }));
-          });
+      const message = this.tm('dialogs.confirmDelete', { name: serverName });
+      if (!(await askForConfirmationDialog(message, this.confirmDialog))) {
+        return;
       }
+
+      axios.post('/api/tools/mcp/delete', { name: serverName })
+        .then(response => {
+          this.getServers();
+          this.showSuccess(response.data.message || this.tm('messages.deleteSuccess'));
+        })
+        .catch(error => {
+          this.showError(this.tm('messages.deleteError', { error: error.response?.data?.message || error.message }));
+        });
     },
     editServer(server) {
       const configCopy = { ...server };
